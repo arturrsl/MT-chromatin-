@@ -12,7 +12,7 @@ function [z_final, f] = fit_FE_fiber(f,CL,Nnuc,NRL,kf,degeneracy,dG1,dG2)
 
 
 %f = (0.03:0.01:7);
-kbT = 4.114;                                     % Boltzmann constant in room temperature (pNnm);
+kbT = 4.114;                                       % Boltzmann constant in room temperature (pNnm);
 %Nnuc = 15;                                      % number of assembled nucleosomes
 %NRL = 167;                                      % Nucleosome Repeat Length (bp)
 %CL = 4535;                                      % length of the DNA template used for reconstitution(bp)
@@ -30,9 +30,10 @@ L_tether = CL - Nnuc * NRL;                      % length of bare DNA handles (b
 
 %% help plots with transition borders
 
-[zet_singlywrapped, g_sing] = WLC_z_G(f,(CL - Nnuc.*Lwrap).*0.34 );             
-[zet_extended, g_ext] = WLC_z_G(f,(CL - Nnuc.*Lwrap).*0.34  + Nnuc.*Lextended);
-[zet_unwrapped, g_unwrap] = WLC_z_G(f,CL .* 0.34);
+[zet_singlywrapped] = WLC_z_G(f,(CL - Nnuc.*Lwrap).*0.34 );             
+[zet_extended] = WLC_z_G(f,(CL - Nnuc.*Lwrap).*0.34  + Nnuc.*Lextended);
+[zet_unwrapped] = WLC_z_G(f,CL .* 0.34);
+
 plot(zet_singlywrapped./1000,f,':');
 hold on;
 plot(zet_extended./1000,f,':');
@@ -47,12 +48,12 @@ plot(zet_unwrapped./1000,f,':');
 [z_singlewrap, g_singlewrap] = WLC_z_G(f,(NRL - Lwrap) .* 0.34);            % DNA extension and internal free energy of unwrapped base pairs; per nucleosome [nm]
 G_singlewrap = g_singlewrap + dG1 ;                                         % correction with free energy G1 that overcomes the energy barrier
 
-[z_extended, g_extended]  = WLC_z_G(f,(NRL - Lwrap) .* 0.34 + Lextended);   % DNA extension and internal free energy of unwrapped base pairs; per nucleosome [nm]
-G_extended = g_extended +  dG1 + dG2 - f.*Lextended./kbT;                   % correction with free energy G2 that overcomes the energy barrier and the work done due to the transition (in other transitions, the work done is included in the WLC/fiber functions)
+z_extended = z_singlewrap +  Lextended;                                     % DNA extension and internal free energy of unwrapped base pairs; per nucleosome [nm]
+%G_extended = G_singlewrap +  dG2 - f.*Lextended./kbT;                      % correction with free energy G2 that overcomes the energy barrier and the work done due to the transition (in other transitions, the work done is included in the WLC/fiber functions)
+G_extended = G_singlewrap +  dG2;
 
 [z_unwrapped, g_unwrapped] = WLC_z_G(f,NRL .* 0.34);                        % DNA extension and internal free energy of unwrapped base pairs; per nucleosome [nm]
-G_unwrapped = g_unwrapped + dG1 + dG2 + dG3 ;                               % correction with free energy G3 that overcomes the energy barrier
-
+G_unwrapped = g_unwrapped + dG1 + dG2 + dG3;                                % correction with free energy G3 that overcomes the energy barrier
 
 %% calculation of all possible states that nucleosome in an array can form, its extension and free energy (!!!work is substracted -z * F !!!)
 %  rows: states, columns: elements of the force ramp
@@ -77,6 +78,7 @@ for i= 1:(Nnuc+1)
             
                G_tot(s,:) = ((G_wrapped + state(s,1) .* G_fiber + state(s,2) .* G_singlewrap + state(s,3) .* G_extended + state(s,4) .* G_unwrapped)) - f.*z_tot(s,:)./kbT;     % internal energy + energy barriers + work done the tether (-z * F)
                
+              
                s = s+1;
                
                
