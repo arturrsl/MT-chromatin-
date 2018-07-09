@@ -1,4 +1,4 @@
-function [z_final, f] = fit_FE_fiber(f,CL,Nnuc,NRL,kf,degeneracy,dG1,dG2)  
+function [z_final, f] = fit_FE_fiber_tetrasome(f,CL,Nnuc,Ntet,NRL,kf,degeneracy,dG1,dG2)  
 
 % simulating chromatin fiber force-extension curves
 
@@ -8,9 +8,10 @@ function [z_final, f] = fit_FE_fiber(f,CL,Nnuc,NRL,kf,degeneracy,dG1,dG2)
 
 % input parameters: 
 % force ramp (pN),contour length (nm), number of
-% nucleosomes, Nucleosome Repeat Length (bp), fiber stiffness (pN/nm), degeneracy, 
+% nucleosomes, number of tetrasomes, Nucleosome Repeat Length (bp), fiber stiffness (pN/nm), degeneracy, 
 % free energy of unstacking (dG1), free energy of the intermediate transition (dG2)
 
+% included tetrasomes
 % Artur Kaczmarczyk, June 2018
 
 %%
@@ -27,9 +28,9 @@ Lwrap = 89;                                      % length of DNA unwrapped from 
 
 %dG1 = 22;                                       % free energy of unstacking (dG1)
 %dG2 = 11;                                       % free energy of the intermediate transition (dG2)
-dG3 = 100;                                       % high force transition (not in equlibrium, value just for plotting purposes)
+dG3 = 80;                                        % high force transition (not in equlibrium, value just for plotting purposes)
 
-
+%Ntet = 5;
 L_tether = CL - Nnuc * NRL;                      % length of bare DNA handles (bp)
 
 %% help plots with transition borders
@@ -45,7 +46,7 @@ plot(zet_unwrapped./1000,f,':');
 
 %% tether length at different states (per nucleosome)
 
-[z_wrapped, G_wrapped] = WLC_z_G(f,L_tether .* 0.34);                       % total DNA handles (nm)
+[z_wrapped, G_wrapped] = WLC_z_G(f,(L_tether .* 0.34));                       % total DNA handles (nm)
 
 [z_fiber, G_fiber] = fiber_z_G(f,kf);                                       % fiber extension and internal free energy per nucleosome [nm]
 
@@ -65,15 +66,18 @@ G_unwrapped = g_unwrapped + dG1 + dG2 + dG3;                                % co
 D = [];
 state = [];
 s = 1;
-
-for i = 1:(Nnuc+1)
+%Nnuc = Nnuc - Ntet;
+for i = 1:(Nnuc - Ntet + 1)
    
-    for j = 1: (Nnuc - i +3)  
+    for j = 1: (Nnuc - Ntet - i +3)  
         
         for k = 1: (Nnuc - i - j +3)
             
-               state(s,:) = [i-1,j-1,k-1,Nnuc - (i-1) - (j-1) - (k-1)];
-               D(s) = factorial(Nnuc)./(factorial(i-1).*factorial(Nnuc-(i-1))) .* (factorial(Nnuc-(i-1))./(factorial(j-1).*factorial(Nnuc-(i-1)-(j-1)))) .* (factorial(Nnuc-(i-1)-(j-1))./(factorial(k-1) .*factorial(Nnuc-(i-1)-(j-1)-(k-1)))); % this particular state exists in D combinations
+               state(s,:) = [i-1,j-1,k-1,Nnuc - (i-1) - (j-1) - (k-1)];         % that's why I add +3 in the loops because I substract -1 three times
+               %state(s,:) = [i-1,j-1,k-1,Nnuc - (i-1) - (j-1) - (k-1)];
+               %D(s) = factorial(Nnuc-Ntet)./(factorial(i-1) .* factorial(Nnuc-Ntet-(i-1))) .* (factorial(Nnuc-Ntet-(i-1))./(factorial(j-1) .* factorial(Nnuc-Ntet-(i-1)-(j-1)))) .* (factorial(Nnuc-(i-1)-(j-1))./(factorial(k-1) .*factorial(Nnuc-(i-1)-(j-1)-(k-1)))); % this particular state exists in D combinations
+               D(s) = factorial(Nnuc)./(factorial(i-1) .* factorial(Nnuc-(i-1))) .* (factorial(Nnuc-(i-1))./(factorial(j-1) .* factorial(Nnuc-(i-1)-(j-1)))) .* (factorial(Nnuc-(i-1)-(j-1))./(factorial(k-1) .*factorial(Nnuc-(i-1)-(j-1)-(k-1)))); % this particular state exists in D combinations
+
                D(s) = 1+(D(s)-1) .* degeneracy;                             % a trick to switch off the degeneracy if not needed                      
             
                D_array(s,:) = repmat(D(s),1,length(f));                     % copying the degeneracy to all columns                 
@@ -111,5 +115,5 @@ for i = 1:col
    
 end
 
-plot(z_final, f)
+plot(z_final, f, 'color','r')
 hold on;
